@@ -2,42 +2,45 @@ from __future__ import annotations
 
 from tkinter import messagebox, PhotoImage
 import tkinter as tk
+
 import os
 
-from system import ServerConfiguration, request_server
+from System import request_server
+from dataclasses import dataclass
+@dataclass
+class ApplicationConnectionInfo:
+    connection_ip: str = None; connection_port: str = None; connection_password: str = None
+@dataclass
+class WindowConfiguration:
+    window_title: str = "EtoМажор :\ Турниры КС:С"; window_sizes: str = "590x300"; window_resize: bool = False
 
 def _request_update_server() -> None:
-    server_information = request_server()
-    if server_information:
+    server_information: dict | None = request_server()
+    if server_information is not None:
+        ApplicationConnectionInfo.connection_ip = server_information["ip"]
+        ApplicationConnectionInfo.connection_port = server_information["port"]
+        ApplicationConnectionInfo.connection_password = server_information["password"]
+
         label_name_value.config(text=server_information["name"])
         label_map_value.config(text=server_information["map"])
         label_game.config(text=server_information["game"])
-        label_vac.config(text="Присутствует" if server_information["vac"] == 1 else "Отсутствует")
         label_version.config(text=server_information["version"])
         label_players_value.config(text=server_information["players"])
+
+        label_vac.config(text="Присутствует" if server_information["vac"] == 1 else "Отсутствует")
+
         player_listbox.delete(0, tk.END)
-        for player in server_information["players_list"]:
-            player_listbox.insert(tk.END, player)
-    else:
-        messagebox.showerror("Ошибка", "Не удалось подключиться к серверу")
-
-from dataclasses import dataclass
-
-@dataclass
-class WindowConfiguration:
-    window_title: str = "EtoМажор :\ Турниры КС:С"
-    window_sizes: str = "590x300"; window_resize: bool = False
+        for player in server_information["players_list"]: player_listbox.insert(tk.END, player)
+    else: messagebox.showerror("Ошибка", "Не удалось подключиться к CS:S серверу, сервер оффлайн :'")
 
 window: tk.Tk = tk.Tk()
-window.title(WindowConfiguration.window_title)
-window.geometry(WindowConfiguration.window_sizes)
+window.title(WindowConfiguration.window_title); window.geometry(WindowConfiguration.window_sizes)
 window.resizable(width=WindowConfiguration.window_resize, height=WindowConfiguration.window_resize)
 
-icon = PhotoImage(file=os.path.join(os.path.dirname(__file__), 'resources', 'favicon.png')); window.iconphoto(True, icon)
+icon: PhotoImage = PhotoImage(file=os.path.join(os.path.dirname(__file__), 'resources', 'favicon.png')); window.iconphoto(True, icon)
 
 def _connect_server_to() -> None:
-    window.clipboard_clear()
-    window.clipboard_append(f"connect {ServerConfiguration.mazhor_css_ip}; password {ServerConfiguration.mazhor_css_password}")
+    window.clipboard_clear(); window.clipboard_append(f"connect {ApplicationConnectionInfo.connection_ip}; password {ApplicationConnectionInfo.connection_password}")
     messagebox.showinfo("Команда для подключения скопирована", "Команда для присоединения к серверу скопирована в буфер обмена. Зайдите в игру и через консоль (~) подключитесь к серверу, просто вставив данную команду")
 
 left_frame = tk.Frame(window)
@@ -91,5 +94,4 @@ btn_update.grid(row=2, column=0, padx=10, pady=5)
 btn_connect = tk.Button(right_frame, text="Подключиться", command=_connect_server_to, width=25, relief="solid", border=0)
 btn_connect.grid(row=3, column=0, padx=10, pady=5)
 
-if __name__ == "__main__":
-    _request_update_server(); window.mainloop()
+if __name__ == "__main__": _request_update_server(); window.mainloop()
